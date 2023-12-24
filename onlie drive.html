@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Storage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #fileList {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #fileList li {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            display: inline-block;
+            text-align: center;
+        }
+
+        #fileList li img {
+            max-width: 100px;
+            max-height: 100px;
+        }
+
+        #fileDropArea {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px;
+            cursor: pointer;
+        }
+
+        .shareLink {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+
+        .copyBtn {
+            margin-top: 10px;
+            cursor: pointer;
+            color: green;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="fileDropArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+        <p>Drag and drop files here</p>
+        <input type="file" id="fileInput" multiple style="display: none;" onchange="handleFileSelect(event)">
+    </div>
+
+    <ul id="fileList"></ul>
+
+    <button id="shareAllBtn" onclick="shareAllFiles()">Share All</button>
+    <button id="copyAllBtn" onclick="copyAllLinks()">Copy All</button>
+    <button id="downloadAllBtn" onclick="promptPasswordAndDownload()">Download All</button>
+
+    <script>
+        function handleFileSelect(event) {
+            event.stopPropagation();
+            event.preventDefault();
+
+            const fileList = event.target.files;
+            handleFiles(fileList);
+        }
+
+        function handleDragOver(event) {
+            event.stopPropagation();
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+        }
+
+        function handleDrop(event) {
+            event.stopPropagation();
+            event.preventDefault();
+
+            const fileList = event.dataTransfer.files;
+            handleFiles(fileList);
+        }
+
+        function generateRandomUrl() {
+            // Generate a random string for the URL
+            return Math.random().toString(36).substring(2, 8);
+        }
+
+        function handleFiles(files) {
+            const fileListContainer = document.getElementById('fileList');
+
+            for (const file of files) {
+                const listItem = document.createElement('li');
+
+                // Create a link that opens in a new tab
+                const link = document.createElement('a');
+                link.href = '#'; // Placeholder, will be replaced with actual link on share
+                link.target = '_blank';
+
+                // Display images if the file is an image
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    link.appendChild(img);
+                } else {
+                    link.textContent = file.name;
+                }
+
+                listItem.appendChild(link);
+
+                // Create a shareable link
+                const randomUrl = generateRandomUrl();
+                link.dataset.shareLink = 'https://example.com/share/' + randomUrl; // Replace with your actual domain and sharing endpoint
+
+                fileListContainer.appendChild(listItem);
+            }
+        }
+
+        function shareAllFiles() {
+            const shareableLinks = Array.from(document.querySelectorAll('#fileList a'));
+            shareableLinks.forEach(link => {
+                link.textContent = link.dataset.shareLink;
+                link.classList.add('shareLink');
+                link.addEventListener('click', function() {
+                    window.open(link.dataset.shareLink, '_blank');
+                });
+            });
+
+            document.getElementById('copyAllBtn').classList.add('copyBtn');
+        }
+
+        function copyAllLinks() {
+            const shareableLinks = Array.from(document.querySelectorAll('#fileList a'));
+            const linkTexts = shareableLinks.map(link => link.dataset.shareLink).join('\n');
+            
+            // Copy links to clipboard
+            navigator.clipboard.writeText(linkTexts).then(() => {
+                alert('All shareable links copied to clipboard!');
+            });
+        }
+
+        function promptPasswordAndDownload() {
+            const password = prompt('Enter the password:');
+            if (password === '1234') {
+                downloadAllFiles();
+            } else {
+                alert('Incorrect password. Access denied.');
+            }
+        }
+
+        function downloadAllFiles() {
+            const fileLinks = Array.from(document.querySelectorAll('#fileList a'));
+            fileLinks.forEach(link => {
+                const anchor = document.createElement('a');
+                anchor.href = link.dataset.shareLink;
+                anchor.target = '_blank';
+                anchor.click();
+            });
+        }
+
+        // Open file input on click for manual file selection
+        document.getElementById('fileDropArea').addEventListener('click', function () {
+            document.getElementById('fileInput').click();
+        });
+    </script>
+</body>
+</html>
